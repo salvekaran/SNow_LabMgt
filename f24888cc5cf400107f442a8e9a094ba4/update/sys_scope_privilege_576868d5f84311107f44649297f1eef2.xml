@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_scope_privilege">
+    <sys_scope_privilege action="INSERT_OR_UPDATE">
+        <operation>execute</operation>
+        <source_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</source_scope>
+        <status>allowed</status>
+        <sys_class_name>sys_scope_privilege</sys_class_name>
+        <sys_created_by>trainingadmin</sys_created_by>
+        <sys_created_on>2022-11-07 19:11:37</sys_created_on>
+        <sys_id>576868d5f84311107f44649297f1eef2</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>core</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_scope_privilege_576868d5f84311107f44649297f1eef2</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-04-12 22:42:06</sys_updated_on>
+        <target_name>core</target_name>
+        <target_scope display_value="JWT Library">3d17a56adb717b00c24df78eaf961906</target_scope>
+        <target_type>sys_script_include</target_type>
+    </sys_scope_privilege>
+</record_update>

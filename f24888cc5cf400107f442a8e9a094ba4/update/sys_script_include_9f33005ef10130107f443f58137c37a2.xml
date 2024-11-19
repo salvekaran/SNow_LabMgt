@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_snc_lab_man.labManagement</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>labManagement</name>
+        <script><![CDATA[var labManagement = Class.create();
+labManagement.prototype = {
+    TOKEN_VALID_FOR: 30, // time a token should be valid for, in seconds
+    initialize: function() {
+        this.debug = false;
+        this.endpointPrefix = gs.getProperty('cl.management.host', 'cloudlabs');
+        this.instanceName = gs.getProperty('instance_name');
+        this.instanceID = gs.getProperty('instance_id');
+        this.instances = [];
+        this.categories = [];
+        this.suppMaterials = [];
+        this.class_name = '';
+        this.parsed = '';
+        // Severity
+        this.critical = 1;
+        this.major = 2;
+        this.minor = 3;
+        this.warning = 4;
+        this.info = 5;
+        this.clear = 0;
+
+        if (gs.getProperty('cl.instructor_instance') == "true" || gs.getProperty('x_snc_lab_man.cl.instructor_instance') == "true") {
+            this.instructor_instance = true;
+        } else {
+            this.instructor_instance = false;
+        }
+
+
+        // do we have any instances?
+        // 		if(this.instances.length == 0){
+        // 			// no instances, kick off a refresh
+        // 			this.getInstances();
+        // 		} else {
+        // 			// we do have instances! run the update routine
+        // 			this.updateInstances();
+        // 			// set the class name property
+        // 			
+        // 		}
+    },
+    loadData: function(data) {
+        // accept an object which contains data
+        // 		gs.info('Typeof obj before: {0}' , typeof data );
+        data = (typeof data == "object") ? data : false;
+        // 		gs.info('Typeof obj after : {0}' , typeof data );
+
+        if (data !== false) {
+            // gather data provided into the constructor and populate this object's properties
+            var props = ['instances', 'categories', 'suppMaterials', 'class_name', 'student_password'];
+            while (props.length) {
+                var p = props.pop();
+                if (data.hasOwnProperty(p)) {
+                    this[p] = data[p];
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    },
+
+    checkInstructor: function() {
+        if (this.instructor_instance == true) {
+            // ReEnable Menu Items and SP pages that need to be enabled for Instructors
+            var recGR = new GlideRecord('sys_app_module');
+            recGR.addEncodedQuery('application=88cd8c045c3800107f442a8e9a094b9d^order<=1499^active=false');
+            recGR.query();
+            while (recGR.next()) {
+                recGR.active = "true";
+                recGR.update();
+            }
+            var pageGR = new GlideRecord('sp_page');
+            pageGR.addQuery('title', 'Instance Reservation');
+            pageGR.addQuery('public', 'false');
+            pageGR.query();
+            while (pageGR.next()) {
+                pageGR.setValue('public', 'true');
+                pageGR.update();
+            }
+        } else {
+            // Disable Menu Items and SP pages that need to be enabled for Instructors
+            var recGR = new GlideRecord('sys_app_module');
+            recGR.addEncodedQuery('application=88cd8c045c3800107f442a8e9a094b9d^order<=1499^active=true');
+            recGR.query();
+            while (recGR.next()) {
+                recGR.active = "false";
+                recGR.update();
+            }
+            var pageGR = new GlideRecord('sp_page');
+            pageGR.addQuery('title', 'Instance Reservation');
+            pageGR.addQuery('public', 'true');
+            pageGR.query();
+            while (pageGR.next()) {
+                pageGR.setValue('public', 'false');
+                pageGR.update();
+            }
+        }
+    },
+
+    getInstances: function() {
+        if (this.instructor_instance == true) {
+            var request = new sn_ws.RESTMessageV2();
+            request.setEndpoint('https://' + this.endpointPrefix + '.service-now.com/api/x_snc_async_api/async_api/signed');
+            request.setHttpMethod('POST');
+            request.setRequestHeader('Content-type', 'application/json');
+            request.setRequestHeader("Accept", "application/json");
+            request.setLogLevel('all');
+            try {
+                // Generate the auth token (JWT)
+                var auth = new x_snc_jwt_lib.core();
+                auth.setRawPayload({
+                    'iss': this.instanceName,
+                    'aud': this.endpointPrefix,
+                    'type': 'instance',
+                });
+                auth.setLifespan(this.TOKEN_VALID_FOR);
+
+                var token = new global.TokenClient().getToken(auth);
+
+                // Set authentication header 
+                request.setRequestHeader("X-AuthToken", "Bearer " + token);
+            } catch (e) {
+                gs.error("An error was encountered while generating the Health Check auth token: {0}", e);
+            }
+            request.setRequestBody(
+                JSON.stringify({
+                    action: 'getInstances',
+                    callback: {
+                        action: 'instance',
+                        instance: this.instanceName,
+                        url: 'https://' + this.instanceName + '.lab.service-now.com/api/x_snc_lab_man/callback/instances',
+                    },
+                    payload: {
+                        'instance': this.instanceName,
+                        'instance_id': this.instanceID,
+                    }
+                })
+            );
+
+            var response = request.execute();
+            if (response.getStatusCode() === 200) {
+                var msg = 'Successfully requested instance refresh.';
+                if (gs.isInteractive()) {
+                    gs.addInfoMessage(msg);
+                } else {
+                    gs.debug(msg);
+                }
+            } else {
+                if (gs.isInteractive()) {
+                    var msg2 = "An error occurred when requesting an instance refresh: {0} {1}";
+                    gs.addErrorMessage(msg2, response.getErrorCode(), response.getErrorMessage());
+                } else {
+                    gs.error(msg2, response.getErrorCode(), response.getErrorMessage());
+                }
+            }
+            /*var parsed = JSON.parse(response.getBody());
+
+            if (this.debug) gs.info('Debug Get Instances: ' + JSON.stringify(parsed));
+            this.instances = parsed.instances;
+            this.categories = parsed.categories;
+            this.suppMaterials = parsed.suppMaterials;
+            //if (gs.getProperty('x_snc_lab_man.custom_lab_name') == 'false') {
+            gs.setProperty('x_snc_lab_man.lab_name', parsed.class_name);
+            //    gs.debug('It worked: ' + parsed.class_name);
+            //}*/
+        } else {
+            // not an instructor instance
+            this.checkInstructor();
+        }
+    },
+
+    updateInstances: function() {
+        // set class name property 
+        if (!gs.nil(this.class_name)) gs.setProperty('x_snc_lab_man.lab_name', this.class_name);
+
+        // do instructor instance things
+        if (this.instructor_instance == true) {
+            var update = '';
+
+            if (this.debug) gs.info("Number of instances: " + this.instances.length);
+
+            while (this.instances.length) {
+                var instance = this.instances.pop();
+                var instanceID = '';
+                if (instance.url != '') {
+                    var instanceTable = new GlideRecord('x_snc_lab_man_student_instances');
+                    instanceTable.addQuery('instance_name', instance.name);
+                    instanceTable.query();
+
+                    if (instanceTable.next()) {
+                        instanceID = instanceTable.sys_id;
+                        update = 'yes';
+                    } else {
+                        instanceTable.initialize();
+                    }
+
+                    instanceTable.instance_name = instance.name;
+                    instanceTable.url = instance.url;
+                    instanceTable.user_name = instance.username;
+                    instanceTable.password = instance.password;
+                    instanceTable.state = instance.state;
+
+                    if (instanceTable.email_address.nil()) {
+                        if (instance.student_email != 'AVAILABLE_INSTANCE') {
+                            if (instance.student_email != 'UNAVAILABLE') {
+                                instanceTable.email_address = instance.student_email.toLowerCase();
+                            }
+                            instanceTable.reserved = true;
+                        } else {
+                            instanceTable.reserved = false;
+                        }
+                    }
+
+                    // set secret key, if available
+                    if (!gs.nil(instance.secret_key)) {
+                        if (this.debug) gs.info("Setting (parent) instance secret key...");
+                        instanceTable.secret_key.setDisplayValue(instance.secret_key);
+                    }
+
+                    if (update == 'yes') {
+                        instanceTable.update();
+                        instanceID = instanceTable.sys_id;
+                    } else {
+                        instanceID = instanceTable.insert();
+                    }
+
+                    if (this.debug) gs.info("Number of child instances: " + instance.children.length);
+
+                    while (instance.children.length) {
+                        var childUpdate = '';
+                        var child = instance.children.pop();
+
+                        var pairTable = new GlideRecord('x_snc_lab_man_paired_instances');
+                        pairTable.addQuery('paired_instance', instanceID);
+                        pairTable.addQuery('instance_name', child.name);
+                        pairTable.addQuery('instance_type', '!=', 'other');
+                        pairTable.query();
+
+                        if (pairTable.next()) {
+                            childUpdate = 'yes';
+                        } else {
+                            childUpdate = '';
+                            pairTable.initialize();
+                        }
+                        pairTable.paired_instance = instanceID;
+                        pairTable.instance_name = child.name;
+                        pairTable.instance_type = child.os;
+                        pairTable.url = child.url;
+                        pairTable.user_name = child.username;
+                        pairTable.password = child.password;
+                        // set secret key, if available
+                        if (!gs.nil(child.secret_key)) {
+                            if (this.debug) gs.info("Setting (child) instance secret key...");
+                            pairTable.secret_key.setDisplayValue(child.secret_key);
+                        }
+                        if (childUpdate == 'yes') {
+                            pairTable.update();
+                        } else {
+                            pairTable.active = true;
+                            pairTable.insert();
+                        }
+
+                    }
+                }
+            }
+            if (this.debug) gs.info("Supp Material: " + this.suppMaterials.length);
+
+            while (this.suppMaterials.length) {
+
+                var suppUpdate = '';
+                var item = this.suppMaterials.pop();
+
+                var pairTable = new GlideRecord('x_snc_lab_man_paired_instances');
+                pairTable.addQuery('url', item.url);
+                pairTable.addQuery('instance_type', 'other');
+                pairTable.query();
+
+                if (pairTable.next()) {
+                    suppUpdate = 'yes';
+                } else {
+                    suppUpdate = '';
+                    pairTable.initialize();
+                }
+                pairTable.instance_type.setValue('other');
+                pairTable.instance_name = item.description;
+                pairTable.url = item.url;
+                pairTable.username = item.username;
+                pairTable.password = item.password;
+                if (suppUpdate == 'yes') {
+                    pairTable.update();
+                } else {
+                    pairTable.active = true;
+                    pairTable.insert();
+                }
+            }
+        }
+
+        this.checkInstructor();
+        this.updateCloudLabsTotals();
+    },
+    updateCloudLabsTotals: function() {
+        // Update Cloudlabs with Registration Total
+        try {
+            var recGR = new GlideRecord('x_snc_lab_man_student_instances');
+            recGR.addQuery('reserved', true);
+            recGR.addNotNullQuery('email_address');
+            recGR.query();
+            var numInstance = recGR.getRowCount();
+
+            var request = new sn_ws.RESTMessageV2();
+            request.setEndpoint('https://' + this.endpointPrefix + '.service-now.com/api/snc/v2/cloud_labs_lab_managment/' + this.instanceID + '/' + numInstance);
+            request.setHttpMethod('GET');
+            request.setRequestHeader("Accept", "application/json");
+
+            var response = request.execute();
+        } catch (ex) {
+            var message = ex.getMessage();
+            return message;
+        }
+    },
+    logMessage: function(message, key, severity, info) {
+        if (!info) {
+            info = "";
+        }
+        var eventUser = gs.getProperty('cl.event.user', null);
+        var eventPassword = gs.getProperty('cl.event.auth', null);
+        var eventEndpoint = gs.getProperty('cl.event.endpoint', null);
+
+        // Check if we have the info necessary to send an event to an event management collector - if not just log locally and exit
+        if (gs.nil(eventEndpoint) || gs.nil(eventUser) || gs.nil(eventPassword)) return;
+
+        // Go ahead and log the message locally before we send on to event management
+        switch (severity) {
+            case 0:
+                gs.info(key + message);
+                break;
+            case 1:
+            case 2:
+                gs.error(key + message);
+                break;
+            case 3:
+            case 4:
+                gs.warn(key + message);
+                break;
+            case 5:
+            default:
+                gs.info(key + message);
+        }
+        var resolutionState = 'New';
+        if (severity == 0) resolutionState = 'Closing';
+        try {
+            var sourceNode = gs.getProperty('instance_name');
+            var requestBody = {
+                records: [{
+                    source: 'CLInstance',
+                    node: sourceNode,
+                    type: key,
+                    resource: sourceNode,
+                    severity: severity,
+                    resolution_state: resolutionState,
+                    description: message,
+                    message_key: sourceNode + "|" + key,
+                    additional_info: info
+                }]
+            };
+            var eventTargetURL = eventEndpoint;
+            var request = new sn_ws.RESTMessageV2();
+            request.setEndpoint(eventTargetURL);
+            request.setHttpMethod('POST');
+            request.setBasicAuth(eventUser, eventPassword);
+            request.setRequestHeader("Accept", "application/json");
+            request.setRequestBody(JSON.stringify(requestBody));
+            var response = request.execute();
+        } catch (error) {
+            gs.warn(key + "Error sending event: " + error);
+        }
+    },
+    wakeInstance: function(student_instance) {
+        //var url = student_instance.url.substr(student_instance.url.indexOf('://') + 3);
+
+        // Setting up the Rest Message
+        var request = new sn_ws.RESTMessageV2();
+        request.setHttpMethod('POST');
+        request.setRequestHeader("Accept", "application/json");
+
+        var url = student_instance.url.toString();
+        if (student_instance.hasOwnProperty('instance_type')) {
+            if (student_instance.instance_type != 'servicenow_instance') {
+                url = url.split(' | ');
+                if (url.length == 2) {
+                    url = url[1];
+                }
+            }
+        }
+
+        if (this.endpointPrefix.includes('cloudlabs')) {
+            request.setEndpoint('https://' + this.endpointPrefix + '.service-now.com/api/snc/lab_management/wakeInstance');
+            request.setRequestBody("{\"instanceURL\":\"" + url + "\"}");
+            request.execute();
+        } else if (this.endpointPrefix.includes('clabs')) {
+
+            url = url.slice(8, url.length - 1); // Removes the https:// and the / at the end
+            try {
+                // Generate the auth token (JWT)
+                var auth = new x_snc_jwt_lib.core();
+                auth.setRawPayload({
+                    'iss': gs.getProperty('instance_name'),
+                    'aud': this.endpointPrefix,
+                    'type': 'instance',
+                });
+                auth.setLifespan(this.TOKEN_VALID_FOR);
+
+                var token = new global.TokenClient().getToken(auth);
+
+                // Set authentication header 
+                request.setRequestHeader("X-AuthToken", "Bearer " + token);
+            } catch (e) {
+                gs.error("An error was encountered while generating the Wake Instance auth token: {0}", e);
+            }
+
+            request.setEndpoint('https://' + this.endpointPrefix + '.service-now.com/api/x_snc_async_api/async_api/signed');
+            request.setRequestHeader('Content-type', 'application/json');
+            request.setLogLevel('all');
+            request.setRequestBody(
+                JSON.stringify({
+                    action: 'wake_instance_by_name',
+                    payload: {
+                        'instance_name': url,
+                    }
+                })
+            );
+            request.execute();
+        }
+        gs.addInfoMessage('Waking Instance. May take up to 10 minutes before it is ready.');
+    },
+    wakeLab: function() {
+        var request = new sn_ws.RESTMessageV2();
+        request.setHttpMethod('POST');
+        request.setRequestHeader("Accept", "application/json");
+		if (this.endpointPrefix.includes('cloudlabs')) {
+
+			request.setEndpoint('https://' + this.endpointPrefix + '.service-now.com/api/snc/lab_management/wakelab');
+			request.setRequestBody("{\"lab_sysid\":\"" + this.instanceID + "\"}");
+			var response = request.execute();
+		}
+		else if (this.endpointPrefix.includes('clabs')) {
+
+			try {
+                // Generate the auth token (JWT)
+                var auth = new x_snc_jwt_lib.core();
+                auth.setRawPayload({
+                    'iss': gs.getProperty('instance_name'),
+                    'aud': this.endpointPrefix,
+                    'type': 'instance',
+                });
+                auth.setLifespan(this.TOKEN_VALID_FOR);
+
+                var token = new global.TokenClient().getToken(auth);
+
+                // Set authentication header 
+                request.setRequestHeader("X-AuthToken", "Bearer " + token);
+            } catch (e) {
+                gs.error("An error was encountered while generating the Wake Lab auth token: {0}", e);
+            }
+			
+			request.setEndpoint('https://' + this.endpointPrefix + '.service-now.com/api/x_snc_async_api/async_api/signed');
+            request.setRequestHeader('Content-type', 'application/json');
+            request.setLogLevel('all');
+            request.setRequestBody(
+                JSON.stringify({
+                    action: 'wakeCollection',
+                    payload: {
+                        'collection_sysid': gs.getProperty('cl.collection_id'),
+                    }
+                })
+            );
+            request.execute();
+		}
+        //gs.addInfoMessage(response.getBody());
+        gs.addInfoMessage("Wake request sent. You will recieve another configuration email for your lab when it is ready");
+    },
+
+	setSponsorImage: function ( data ) {
+		
+		var attachmentId = data.attachmentID.toString();
+		var name = data.sponsorName.toString();
+		var altText = data.sponsorAlt.toString();
+		
+		// Turn off any old sponsor records
+		var sponsorGR = new GlideRecord('x_snc_lab_man_cl_sponsor');
+		sponsorGR.addActiveQuery();
+		sponsorGR.query();
+		while(sponsorGR.next()) {
+			sponsorGR.active = false;
+		}
+		sponsorGR.updateMultiple();
+
+		sponsorGR.initialize();
+		sponsorGR.name = name;
+		sponsorGR.alt_text = altText;
+		sponsorGR.active = true;
+		sponsorGR.insert();
+
+		var remoteUser = 'cl.attachment.user';
+        var remotePassword = '{^$0&{NB!c-hV@zPMvV.2rs26([w+yJ<%5NcVL07*yn=N%ZHDuIQfDg';
+        var remoteUploadRequest = new sn_ws.RESTMessageV2();
+        remoteUploadRequest.setBasicAuth(remoteUser, remotePassword);
+        remoteUploadRequest.setHttpMethod('GET');
+        remoteUploadRequest.setEndpoint('https://' + gs.getProperty('cl.management.host') + '.service-now.com/api/now/attachment/' + attachmentId + '/file');
+        remoteUploadRequest.setRequestHeader('Accept', '*/*');
+        remoteUploadRequest.saveResponseBodyAsAttachment('x_snc_lab_man_cl_sponsor', sponsorGR.sys_id, 'sponsorImg');
+        var remoteUploadResponse = remoteUploadRequest.execute();
+	},
+
+    type: 'labManagement'
+};
+
+labManagement.deice_complete = function() {
+    var request = new sn_ws.RESTMessageV2();
+    var manhost = gs.getProperty('cl.management.host');
+    var instance_id = gs.getProperty('instance_id');
+
+    request.setEndpoint('https://' + manhost + '.service-now.com/api/snc/lab_management/deice');
+    request.setHttpMethod('POST');
+
+    request.setRequestHeader("Accept", "application/json");
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestBody("{\"lab_sysid\":\"" + instance_id + "\"}");
+    var response = request.execute();
+};
+
+labManagement.reset_passwords = function(student_instance) {
+
+    var request = new sn_ws.RESTMessageV2();
+    request.setEndpoint(student_instance.url + '/api/x_snc_lab_man/lab_management/reset_password');
+    request.setHttpMethod('POST');
+    request.setRequestHeader("Accept", "application/json");
+
+    var response = request.execute();
+    var data = JSON.parse(response.getBody());
+    gs.addInfoMessage(data.result.message);
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-07-01 16:35:52</sys_created_on>
+        <sys_id>9f33005ef10130107f443f58137c37a2</sys_id>
+        <sys_mod_count>12</sys_mod_count>
+        <sys_name>labManagement</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_script_include_9f33005ef10130107f443f58137c37a2</sys_update_name>
+        <sys_updated_by>brian.nhieu@snc</sys_updated_by>
+        <sys_updated_on>2024-04-25 20:48:58</sys_updated_on>
+    </sys_script_include>
+</record_update>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_form_sections form_id="883840b0f43110107f44b15af1f82ad4" sys_domain="global" table="x_snc_lab_man_paired_instances" version="3">
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>0</position>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-07-01 15:30:42</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>403840b0f43110107f44b15af1f82ad6</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="x_snc_lab_man_paired_instances" name="x_snc_lab_man_paired_instances" sys_domain="global" view="Default view">883840b0f43110107f44b15af1f82ad4</sys_ui_form>
+            <sys_ui_section caption="New Section" display_value="New Section" name="x_snc_lab_man_paired_instances" sys_domain="global" view="Default view">22eb08c05c3800107f442a8e9a094bd5</sys_ui_section>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2020-07-01 15:30:42</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form action="INSERT_OR_UPDATE">
+            <name>x_snc_lab_man_paired_instances</name>
+            <roles/>
+            <sys_class_name>sys_ui_form</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-07-01 15:30:42</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>883840b0f43110107f44b15af1f82ad4</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>x_snc_lab_man_paired_instances</sys_name>
+            <sys_overrides/>
+            <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+            <sys_update_name>sys_ui_form_sections_883840b0f43110107f44b15af1f82ad4</sys_update_name>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-04-12 22:42:11</sys_updated_on>
+            <sys_user/>
+            <view display_value="Default view" name="NULL">Default view</view>
+            <view_name/>
+        </sys_ui_form>
+    </sys_ui_form_sections>
+</record_update>

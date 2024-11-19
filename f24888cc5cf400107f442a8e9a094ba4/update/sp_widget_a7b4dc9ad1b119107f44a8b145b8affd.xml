@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[function ($uibModal,$scope, $window) {
+	/* widget controller */
+	var c = this;
+	/*
+	$scope.reserveInstance = function () {
+		c.server.update();
+	}
+
+	$scope.submitCode = function () {
+		c.server.update(c.data);
+	}
+	
+	c.openModal = function() {
+		c.modalInstance = $uibModal.open({
+			templateUrl: 'modalTemplate',
+			scope: $scope
+		});
+	}
+
+	c.closeModal = function() {
+		c.modalInstance.close();
+	}
+*/
+}]]></client_script>
+        <controller_as>c</controller_as>
+        <css>h2, h3 {
+  margin-bottom: 20px;
+}
+.center {
+  text-align: center;
+}
+.code {
+  font-weight: bolder;
+  font-size: 150%;
+  margin-bottom: 20px;
+}
+.bright {
+  font-size: 200%;
+}
+
+table.table {
+  text-align: left;
+}
+input {
+  /** Lighten placeholder text **/
+  $phColor: #a9a9a9;
+  &amp;::placeholder { 
+    color: $phColor; 
+    opacity: 1; 
+  }
+  &amp;:-ms-input-placeholder,
+  &amp;::-ms-input-placeholder { 
+    color: $phColor; 
+  }
+}
+
+input#regCode {
+  font-size: 1.5em;
+  text-align: center;
+  text-transform: uppercase;
+  display: inline-block;
+  max-width: 100px;
+  margin-bottom: 20px;
+}
+
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id>reservation_code</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs) {
+/*	console.log(attrs);
+	console.log(element);
+	console.log(scope);
+	console.log(scope.data);
+	console.log(angular.element);
+	var div = element.find('input');
+	var input = element.find('.codeEntry > input');
+	console.log(div);
+	console.log(input);
+	var el = $(element[0]).find('.btn');
+	console.log(el);
+	if( el.style.display != "none" ){
+		$(el).find('input#regCode').focus();
+	}
+	var el = $(element[0]).find('input#regCode');	
+	scope.$evalAsync(function() {
+		el.focus();	
+	});*/
+}]]></link>
+        <name>Reservation code</name>
+        <option_schema/>
+        <public>false</public>
+        <roles>admin</roles>
+        <script><![CDATA[(function () {
+
+	var debug = false;
+	var debugCode = "";
+	
+	// get the lab title 
+	data.labTitle = gs.getProperty('x_snc_lab_man.lab_name');
+
+	// is a code required? 
+	if( debug === true ){ 
+		data.code_required = true;
+	} else {
+		data.code_required = gs.getProperty(
+			'x_snc_lab_man.reservation_code_required' , 
+			(debug == true ? "true" : "false")
+		) === "true" ? true : false;
+	}
+	
+	// get the expected registration code, or boolean false if no code is set
+	var validCode = gs.getProperty(
+		'x_snc_lab_man.reservation_code',
+		(debug == true ? debugCode : false)
+	);
+	validCode = ((validCode !== 'false' && validCode.length > 0 ) ? validCode : false);
+
+	data.reservation_code = validCode;
+
+	// if we don't have a reservation code, mark code required as false
+	data.code_required = ( data.reservation_code === false ) ? false : data.code_required;
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-09-09 17:01:04</sys_created_on>
+        <sys_id>a7b4dc9ad1b119107f44a8b145b8affd</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Reservation code</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sp_widget_a7b4dc9ad1b119107f44a8b145b8affd</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-04-12 22:42:03</sys_updated_on>
+        <template><![CDATA[<div class="center">
+  <img src="servicenow_transparent_logo.png" width="424px">
+  <h2>
+    Welcome to<br>
+    {{data.labTitle}}
+  </h2>
+  <div ng-if="!data.code_required || (data.code_required && !data.reservation_code)"
+       class="code">
+    <div class="alert alert-info">No reservation code is required for this lab.</div>
+  </div>
+  <div ng-if="data.code_required && data.reservation_code"
+       class="code">
+    Reservation code
+    <div class="alert alert-success code">
+      {{data.reservation_code}}
+    </div>
+  </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>

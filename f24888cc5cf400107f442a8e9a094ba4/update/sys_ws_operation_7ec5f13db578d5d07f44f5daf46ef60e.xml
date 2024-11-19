@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_operation">
+    <sys_ws_operation action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <consumes>application/json</consumes>
+        <consumes_customized>true</consumes_customized>
+        <default_operation_uri/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <http_method>POST</http_method>
+        <name>Health check</name>
+        <operation_script><![CDATA[(function process(/*RESTAPIRequest*/ request, /*RESTAPIResponse*/ response) {
+
+	
+// 	var body = request.getBody();
+	var data = request.body.data.result;
+// 	gs.info("Data is: {0}", JSON.stringify(data));
+	var authRaw = request.getHeader('X-AuthToken');
+	var authToken = "";
+	if(gs.nil(authRaw)){
+		response.setError(new sn_ws_err.BadRequestError('No authentication header specified.'));
+		return;
+	} else {
+		// digest the authorization header into a usable token
+		var parts = authRaw.match(/^Bearer (.*)$/i);
+		if( parts.length > 1 ){
+			authToken = parts[1];
+		} else {
+			authToken = JSON.stringify(parts);
+		}
+	}
+	var is_token_valid = null;
+	if( ! gs.nil( authToken ) ){
+		is_token_valid = ( new global.TokenClient().verifySignature( authToken ) === true );		
+// 		gs.info("Found token. Is token valid? {0}" , is_token_valid );
+	}
+
+	if( is_token_valid === true || is_token_valid === null ){
+		response.setHeader('Content-type','application/json');
+		try {
+			// Process the returned JSON 
+			var dataString = JSON.stringify(data);
+			
+			if( dataString.length > 0 ){
+				gs.setProperty('x_snc_lab_man.cl.LabManHealthData', dataString);				
+			} // else: don't overwrite the existing property
+
+			// If there is a remote function, set the property with it
+			if (data.remote_function != ''){
+				if (data.remote_function == 'Reset SN Passwords'){
+					data.remote_function = 'reset_password';
+				}
+				gs.setProperty('x_snc_lab_man.cl.remote_function', data.remote_function);
+			}
+
+			// Determine the run interval for the scheduled job
+			/// baseline interval, in seconds
+			var interval = 900; 
+			/// override with the interval specified in the return payload, if it's valid
+			if( data.hasOwnProperty('interval') && parseInt(data.interval) > 0 ){
+				interval = parseInt(data.interval);
+			}
+
+			// Recalculate new run time for scheduled job adding in up to a random 2.5 minutes
+			var recGR = new GlideRecord('sysauto');
+			recGR.addQuery('name', 'CL: Health Check');
+			recGR.query();
+
+			while (recGR.next()) {
+				var dur = interval + Math.floor(Math.random() * 150);
+
+				var h = Math.floor(dur / 3600);
+				var m = Math.floor(dur % 3600 / 60);
+				var s = Math.floor(dur % 3600 % 60);
+				h = pad(h, 2);
+				m = pad(m, 2);
+				s = pad(s, 2);
+				var duration = h + ':' + m + ':' + s;
+
+				duration = new GlideDuration(duration);
+				recGR.run_period = duration;
+				recGR.update();
+			}
+
+			response.setStatus(200);
+		} catch(e){
+			response.setStatus(500);
+			response.setBody(JSON.stringify(
+				{
+					'error': e
+				}
+			));
+		}
+	} else {
+		response.setStatus(403);
+	}
+	
+	function pad(n, width, z) {
+		z = z || '0';
+		n = n + '';
+		return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+	}
+
+})(request, response);]]></operation_script>
+        <operation_uri>/api/x_snc_lab_man/callback/health_check</operation_uri>
+        <produces>application/json</produces>
+        <produces_customized>true</produces_customized>
+        <relative_path>/health_check</relative_path>
+        <request_example/>
+        <requires_acl_authorization>true</requires_acl_authorization>
+        <requires_authentication>false</requires_authentication>
+        <requires_snc_internal_role>true</requires_snc_internal_role>
+        <short_description>Receives health check response data</short_description>
+        <sys_class_name>sys_ws_operation</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-07-20 17:54:57</sys_created_on>
+        <sys_id>7ec5f13db578d5d07f44f5daf46ef60e</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Health check</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_ws_operation_7ec5f13db578d5d07f44f5daf46ef60e</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-04-12 23:06:04</sys_updated_on>
+        <web_service_definition display_value="Callback">a1b53d75b5b8d5d07f44f5daf46ef6ff</web_service_definition>
+        <web_service_version/>
+    </sys_ws_operation>
+</record_update>

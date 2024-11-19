@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_policy_action">
+    <sys_ui_policy_action action="INSERT_OR_UPDATE">
+        <cleared>false</cleared>
+        <disabled>true</disabled>
+        <field>blocked_until</field>
+        <mandatory>ignore</mandatory>
+        <sys_class_name>sys_ui_policy_action</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-03-02 20:54:28</sys_created_on>
+        <sys_id>71ce051e5519a1107f445ddc83057368</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>blocked_until</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_ui_policy_action_71ce051e5519a1107f445ddc83057368</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-02 20:54:28</sys_updated_on>
+        <table>x_snc_lab_man_rate_limit</table>
+        <ui_policy display_value="Prevent form/list edits of managed fields">42be811e5519a1107f445ddc830573f0</ui_policy>
+        <visible>ignore</visible>
+    </sys_ui_policy_action>
+</record_update>

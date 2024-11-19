@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_operation">
+    <sys_ws_operation action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_operation_uri/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <http_method>POST</http_method>
+        <name>reset_password</name>
+        <operation_script><![CDATA[(function process( /*RESTAPIRequest*/ request, /*RESTAPIResponse*/ response) {
+
+	gs.setProperty('x_snc_lab_man.cl.remote_function', 'Reset SN Passwords OS');
+
+    return {
+        "status": "200",
+        "message": "Initiated. Please Wait at least 2 minutes for Passwords to Reset."
+    };
+
+})(request, response);]]></operation_script>
+        <operation_uri>/api/x_snc_lab_man/lab_management/reset_password</operation_uri>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <relative_path>/reset_password</relative_path>
+        <request_example/>
+        <requires_acl_authorization>false</requires_acl_authorization>
+        <requires_authentication>false</requires_authentication>
+        <requires_snc_internal_role>false</requires_snc_internal_role>
+        <short_description/>
+        <sys_class_name>sys_ws_operation</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-03-02 19:07:57</sys_created_on>
+        <sys_id>eddd5117c12a20107f44928187b22b0a</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>reset_password</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_ws_operation_eddd5117c12a20107f44928187b22b0a</sys_update_name>
+        <sys_updated_by>brian.nhieu@snc</sys_updated_by>
+        <sys_updated_on>2024-02-14 23:41:45</sys_updated_on>
+        <web_service_definition display_value="CL: Lab Management">0aa987a2d17020107f447d062fd3d813</web_service_definition>
+        <web_service_version/>
+    </sys_ws_operation>
+</record_update>

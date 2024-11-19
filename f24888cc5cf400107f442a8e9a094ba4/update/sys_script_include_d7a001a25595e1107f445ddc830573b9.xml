@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_snc_lab_man.rateLimitMath</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Math and calculation functions for the rate limiter</description>
+        <name>rateLimitMath</name>
+        <script><![CDATA[var rateLimitMath = Class.create();
+rateLimitMath.prototype = {
+
+	PROP_MINIMUM: 'x_snc_lab_man.rate_limit_minimum_failcount',
+	MINIMUM: 0, // minimum number of failures before rate limiting is engaged
+	PROP_RETENTION_SECONDS: 'x_snc_lab_man.rate_limit_retention',
+	RETENTION_SECONDS: 3600, // number of seconds rate limit records should be retained
+	PROP_BACKOFF_BUFFER: 'x_snc_lab_man.rate_limit_backoff_buffer',
+	BACKOFF_BUFFER: 7, // magic number to help temper the 2^x exponential growth of the backoff counter
+
+	initialize: function() {
+		// gather property values or use defaults
+		this.MINIMUM = gs.getProperty( this.PROP_MINIMUM , this.MINIMUM );
+		this.RETENTION_SECONDS = gs.getProperty( this.PROP_RETENTION_SECONDS , this.RETENTION_SECONDS );
+		this.BACKOFF_BUFFER = gs.getProperty( this.PROP_BACKOFF_BUFFER , this.BACKOFF_BUFFER );
+	},
+	// calculates the rate limit delay, in seconds
+	getBackoffSeconds: function( fail_count ){
+		fail_count = parseInt(fail_count) || 1;
+		var backoffInt = fail_count - this.getMinimum();
+
+		// calculate & return the backoff interval IFF backoffInt > 0 ; 
+		// if backoffInt < 0 the resulting interval will ALWAYS == 0
+		// so there's no reason to waste cycles calculating it
+		return backoffInt <= 0 ? 0 : (
+			Math.max( 0 , backoffInt ) * Math.pow( 2 , backoffInt / this.getBackoffBuffer() )
+		);
+	},
+	// returns the minimum # of failures before rate limiting is engaged
+	getMinimum: function(){
+		return parseInt( this.MINIMUM );
+	},
+	// returns the "magic number" used to temper the exponential growth curve
+	getBackoffBuffer: function(){
+		return parseInt(this.BACKOFF_BUFFER);
+	},
+	// returns the interval of time (in seconds) rate limit records should be retained
+	getRetentionSeconds: function(){
+		return parseInt(this.RETENTION_SECONDS);
+	},
+	type: 'rateLimitMath'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-03-03 14:31:29</sys_created_on>
+        <sys_id>d7a001a25595e1107f445ddc830573b9</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>rateLimitMath</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_script_include_d7a001a25595e1107f445ddc830573b9</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-03 14:33:43</sys_updated_on>
+    </sys_script_include>
+</record_update>

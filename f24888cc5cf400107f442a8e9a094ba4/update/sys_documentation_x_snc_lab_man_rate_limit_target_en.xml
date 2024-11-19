@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_documentation element="target" label="Target" language="en" table="x_snc_lab_man_rate_limit">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>target</element>
+            <help/>
+            <hint>Target of the attempt</hint>
+            <label>Target</label>
+            <language>en</language>
+            <name>x_snc_lab_man_rate_limit</name>
+            <plural>Targets</plural>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2023-02-28 22:00:59</sys_created_on>
+            <sys_mod_count>1</sys_mod_count>
+            <sys_name>Target</sys_name>
+            <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+            <sys_update_name>sys_documentation_x_snc_lab_man_rate_limit_target_en</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2023-03-02 21:03:51</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

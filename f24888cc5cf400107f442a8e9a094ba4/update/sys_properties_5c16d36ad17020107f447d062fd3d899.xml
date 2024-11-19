@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_properties">
+    <sys_properties action="INSERT_OR_UPDATE">
+        <choices/>
+        <description/>
+        <ignore_cache>true</ignore_cache>
+        <is_private>false</is_private>
+        <name>x_snc_lab_man.cl.deice</name>
+        <read_roles/>
+        <suffix>cl.deice</suffix>
+        <sys_class_name>sys_properties</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-12-03 20:08:36</sys_created_on>
+        <sys_id>5c16d36ad17020107f447d062fd3d899</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>x_snc_lab_man.cl.deice</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_properties_5c16d36ad17020107f447d062fd3d899</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-07-07 15:53:47</sys_updated_on>
+        <type>boolean</type>
+        <value/>
+        <write_roles/>
+    </sys_properties>
+    <sys_translated_text action="delete_multiple" query="documentkey=5c16d36ad17020107f447d062fd3d899"/>
+</record_update>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_app_module">
+    <sys_app_module action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <application display_value="Lab Management">88cd8c045c3800107f442a8e9a094b9d</application>
+        <assessment/>
+        <device_type/>
+        <filter/>
+        <hint/>
+        <homepage/>
+        <image/>
+        <link_type>DIRECT</link_type>
+        <map_page/>
+        <mobile_title>Repair Machine Learning Settings</mobile_title>
+        <mobile_view_name>Mobile</mobile_view_name>
+        <name/>
+        <order>1510</order>
+        <override_menu_roles>false</override_menu_roles>
+        <query>instance_reservation?id=cl_ml_prop_reset</query>
+        <report/>
+        <roles/>
+        <sys_class_name>sys_app_module</sys_class_name>
+        <sys_created_by>eric.williams</sys_created_by>
+        <sys_created_on>2020-07-23 13:12:33</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>bb4bf07b818614107f447877e3db4080</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Repair Machine Learning Settings</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_app_module_bb4bf07b818614107f447877e3db4080</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-04-12 22:42:04</sys_updated_on>
+        <timeline_page/>
+        <title>Repair Machine Learning Settings</title>
+        <uncancelable>false</uncancelable>
+        <view_name/>
+        <window_name/>
+    </sys_app_module>
+</record_update>

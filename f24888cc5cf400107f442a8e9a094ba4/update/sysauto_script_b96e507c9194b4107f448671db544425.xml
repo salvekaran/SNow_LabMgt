@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sysauto_script">
+    <sysauto_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <business_calendar/>
+        <condition/>
+        <conditional>false</conditional>
+        <entered_time>1970-01-01 00:00:00</entered_time>
+        <max_drift/>
+        <name>CL: Health Check</name>
+        <offset/>
+        <offset_type/>
+        <run_as display_value="Training Admin">fcff760460d632007f44c64fabb13188</run_as>
+        <run_as_tz/>
+        <run_dayofmonth>1</run_dayofmonth>
+        <run_dayofweek>1</run_dayofweek>
+        <run_period>1970-01-01 00:08:58</run_period>
+        <run_start>2021-05-20 19:55:54</run_start>
+        <run_time>1970-01-01 00:00:00</run_time>
+        <run_type>periodically</run_type>
+        <script><![CDATA[var token_valid_for = 300; // tokens should be valid for 30 seconds 
+var ip = '';
+var instanceID = '';
+var instance_name = gs.getProperty('instance_name');
+var instance_host = instance_name + '.lab.service-now.com';
+var callback_api = '/api/x_snc_lab_man/callback/health_check';
+var manHost = gs.getProperty('cl.management.host');
+var manEndpoint = '/api/x_snc_async_api/async_api/signed'; // TODO: FILL THIS IN
+var instance_configurator = gs.getProperty('instance_configurator');
+var dcInstance = gs.getProperty('cl.datacenter_instance');
+var instanceSysid = gs.getProperty('instance_id');
+var activeUsers = parseInt(gs.getProperty('cl.activeUsers', 1));
+var uptime = gs.getProperty('cl.uptime', 0);
+var hibernationBypass = gs.getProperty('cl.hibernationBypass', false);
+var hibernationTimeout = parseInt(gs.getProperty('cl.hibernationTimeout', 4));
+var reboot = gs.getProperty('x_snc_lab_man.cl.reboot', false);
+
+// var secret_property_name = 'x_snc_tokenclient.secret_key';
+
+// Set Health Script Status so the local OS scripts will not also do a health check
+gs.setProperty('x_snc_lab_man.cl.LabManHealth', true);
+
+// If this is AWS, we go and get the current public IP that is on this system
+var request = new sn_ws.RESTMessageV2();
+request.setHttpMethod('get');
+request.setEndpoint('http://169.254.169.254/latest/meta-data/public-ipv4');
+var response = request.execute();
+var httpResponseStatus = response.getStatusCode();
+if (httpResponseStatus == '200') {
+    ip = response.getBody();
+} else {
+    ip = 'NA';
+}
+
+// If this is AWS, get AWS Instance ID
+if (dcInstance == 'false') {
+    var request = new sn_ws.RESTMessageV2();
+    request.setHttpMethod('get');
+    request.setEndpoint('http://169.254.169.254/latest/meta-data/instance-id');
+    var response = request.execute();
+    var httpResponseStatus = response.getStatusCode();
+    if (httpResponseStatus == '200') {
+        instanceID = response.getBody();
+    } else {
+        instanceID = gs.getProperty('instance_id');
+    }
+} else {
+    instanceID = gs.getProperty('instance_id');
+}
+
+// Calculate uptime from milliseconds to hours
+uptime = uptime / 3600000;
+
+// Set up Cloud Labs Health Call
+var request = new sn_ws.RESTMessageV2();
+request.setEndpoint('https://' + manHost + '.service-now.com' + manEndpoint);
+request.setHttpMethod('POST');
+request.setRequestHeader("Accept", "application/json");
+request.setRequestHeader("Content-type", "application/json");
+// Set the authentication 
+try {
+    // Generate the auth token (JWT)
+    //var auth = new x_snc_tokenclient.maker();
+	var auth = new x_snc_jwt_lib.core();
+    auth.setPayload({
+        'iss': instance_name,
+        'aud': manHost,
+        'type': 'instance',
+    });
+    auth.setLifespan( token_valid_for );
+	
+	var token = new global.TokenClient().getToken( auth );
+//     var token = auth.getInstanceToken();
+
+    // Set authentication header 
+    request.setRequestHeader("X-AuthToken", "Bearer " + token);
+} catch (e){
+    gs.error("An error was encountered while generating the Health Check auth token: {0}", e);
+}
+
+// Build Payload
+var instanceData = {};
+instanceData.action = "clHealthCheck";
+instanceData.payload = {
+    'ip': ip,
+    'status': 'Running',
+    'id': instanceID,
+    'lastActivity': uptime,
+    'activeUsers': activeUsers,
+};
+instanceData.callback = {
+    'action': 'instance',
+	'instance': instance_name,
+    'url': 'https://' + instance_host + callback_api,
+    'username': '',
+    'password': '',
+};
+//gs.info("CL Health Check Async instanceData: {0}", JSON.stringify(instanceData));
+
+// Make up Cloud Labs Health Call
+request.setRequestBody( JSON.stringify(instanceData) );
+
+// request.setLogLevel('all');
+var response = request.execute();
+
+//TODO: retry if the REST request fails
+
+// Decide if we need to hibernate or not
+if (reboot == "false") {
+    if (hibernationTimeout < uptime && hibernationBypass == 'false') {
+        if (instance_configurator == 'Complete' && dcInstance == 'false' && activeUsers <= 0) {
+            // Call Hibernation
+            gs.setProperty('x_snc_lab_man.cl.reboot', true);
+            var hRequest = new sn_ws.RESTMessageV2();
+            hRequest.setEndpoint('https://' + manHost + '.service-now.com/api/snc/lab_management/hibernateInstance');
+            hRequest.setHttpMethod('POST');
+            hRequest.setRequestHeader("Accept", "application/json");
+            hRequest.setRequestBody("{\"instanceSysid\":\"" + instanceSysid + "\"}");
+            var hResponse = hRequest.execute();
+        }
+    }
+} else {
+    gs.setProperty('x_snc_lab_man.cl.reboot', false);
+}]]></script>
+        <sys_class_name>sysauto_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-05-20 19:56:02</sys_created_on>
+        <sys_id>b96e507c9194b4107f448671db544425</sys_id>
+        <sys_mod_count>776</sys_mod_count>
+        <sys_name>CL: Health Check</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sysauto_script_b96e507c9194b4107f448671db544425</sys_update_name>
+        <sys_updated_by>guest</sys_updated_by>
+        <sys_updated_on>2024-11-19 09:40:13</sys_updated_on>
+        <time_zone/>
+        <upgrade_safe>false</upgrade_safe>
+    </sysauto_script>
+</record_update>

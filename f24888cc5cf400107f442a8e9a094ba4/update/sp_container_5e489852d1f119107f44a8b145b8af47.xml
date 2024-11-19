@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_container">
+    <sp_container action="INSERT_OR_UPDATE">
+        <background_color/>
+        <background_image/>
+        <background_style>default</background_style>
+        <bootstrap_alt>false</bootstrap_alt>
+        <class_name/>
+        <container_class_name/>
+        <name>Reservation console - Container 1</name>
+        <order>1</order>
+        <semantic_tag/>
+        <sp_page display_value="reservation_console">1e489852d1f119107f44a8b145b8af44</sp_page>
+        <subheader>false</subheader>
+        <sys_class_name>sp_container</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-09-09 17:16:32</sys_created_on>
+        <sys_id>5e489852d1f119107f44a8b145b8af47</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Reservation console - Container 1</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sp_container_5e489852d1f119107f44a8b145b8af47</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-04-12 22:42:02</sys_updated_on>
+        <title/>
+        <width>container</width>
+    </sp_container>
+</record_update>

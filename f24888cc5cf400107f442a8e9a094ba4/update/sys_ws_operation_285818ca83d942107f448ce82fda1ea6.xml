@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_operation">
+    <sys_ws_operation action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <consumes>application/json</consumes>
+        <consumes_customized>true</consumes_customized>
+        <default_operation_uri/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <http_method>POST</http_method>
+        <name>Machine Learning Properties</name>
+        <operation_script><![CDATA[(function process(/*RESTAPIRequest*/ request, /*RESTAPIResponse*/ response) {
+	var resultProperty = 'x_snc_lab_man.ml_properties_response';
+	var result = request.body.data.result;
+	
+	var authRaw = request.getHeader('X-AuthToken');
+	var authToken = "";
+	if(gs.nil(authRaw)){
+		response.setError(new sn_ws_err.BadRequestError('No authentication header specified.'));
+		return;
+	} else {
+		// digest the authorization header into a usable token
+		var parts = authRaw.match(/^Bearer (.*)$/i);
+		if( parts.length > 1 ){
+			authToken = parts[1];
+		} else {
+			authToken = JSON.stringify(parts);
+		}
+	}
+	var is_token_valid = null;
+	if( ! gs.nil( authToken ) ){
+		is_token_valid = ( new global.TokenClient().verifySignature( authToken ) === true );		
+	}
+
+	if( is_token_valid === true || is_token_valid === null ){
+		response.setHeader('Content-type','application/json');
+		try {		
+			if( result.hasOwnProperty('properties')){
+				gs.setProperty(resultProperty,JSON.stringify(result));
+				gs.warn(JSON.stringify(result));
+				response.setStatus(200);
+			} else {
+				response.setStatus(400);
+				response.setBody({
+					error: 'Request body missing one or more required data elements.'
+				});
+			}
+		} catch(e){
+			response.setStatus(500);
+			response.setBody(
+				{
+					'error': e
+				}
+			);
+			gs.error('Machine Learning property reset error.');
+		}
+	} else {
+		response.setStatus(403);
+	}
+
+})(request, response);]]></operation_script>
+        <operation_uri>/api/x_snc_lab_man/callback/machine_learning_properties</operation_uri>
+        <produces>application/json</produces>
+        <produces_customized>true</produces_customized>
+        <relative_path>/machine_learning_properties</relative_path>
+        <request_example/>
+        <requires_acl_authorization>true</requires_acl_authorization>
+        <requires_authentication>false</requires_authentication>
+        <requires_snc_internal_role>true</requires_snc_internal_role>
+        <short_description>Machine Learning Properties callback handler</short_description>
+        <sys_class_name>sys_ws_operation</sys_class_name>
+        <sys_created_by>ice.user</sys_created_by>
+        <sys_created_on>2024-04-02 14:50:12</sys_created_on>
+        <sys_id>285818ca83d942107f448ce82fda1ea6</sys_id>
+        <sys_mod_count>4</sys_mod_count>
+        <sys_name>Machine Learning Properties</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_ws_operation_285818ca83d942107f448ce82fda1ea6</sys_update_name>
+        <sys_updated_by>ice.user</sys_updated_by>
+        <sys_updated_on>2024-04-02 16:51:51</sys_updated_on>
+        <web_service_definition display_value="Callback">a1b53d75b5b8d5d07f44f5daf46ef6ff</web_service_definition>
+        <web_service_version/>
+    </sys_ws_operation>
+</record_update>

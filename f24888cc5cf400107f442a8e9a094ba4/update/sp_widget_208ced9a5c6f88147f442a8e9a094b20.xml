@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[function ($uibModal,$scope, $window) {
+	/* widget controller */
+	var c = this;
+	
+	$scope.reserveInstance = function () {
+		c.server.update();
+	}
+
+	$scope.submitCode = function () {
+		c.server.update(c.data);
+	}
+	
+	c.openModal = function() {
+		c.modalInstance = $uibModal.open({
+			templateUrl: 'modalTemplate',
+			scope: $scope
+		});
+	}
+
+	c.closeModal = function() {
+		c.modalInstance.close();
+	}
+
+}]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.center {
+  text-align: center;
+}
+
+table.table {
+  text-align: left;
+}
+input {
+  /** Lighten placeholder text **/
+  $phColor: #a9a9a9;
+  &amp;::placeholder { 
+    color: $phColor; 
+    opacity: 1; 
+  }
+  &amp;:-ms-input-placeholder,
+  &amp;::-ms-input-placeholder { 
+    color: $phColor; 
+  }
+}
+
+input#regCode {
+  font-size: 1.5em;
+  text-align: center;
+  text-transform: uppercase;
+  display: inline-block;
+  max-width: 100px;
+  margin-bottom: 20px;
+}
+
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id>get_your_instance</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs) {
+/*	console.log(attrs);
+	console.log(element);
+	console.log(scope);
+	console.log(scope.data);
+	console.log(angular.element);
+	var div = element.find('input');
+	var input = element.find('.codeEntry > input');
+	console.log(div);
+	console.log(input);
+	var el = $(element[0]).find('.btn');
+	console.log(el);
+	if( el.style.display != "none" ){
+		$(el).find('input#regCode').focus();
+	}
+	var el = $(element[0]).find('input#regCode');	
+	scope.$evalAsync(function() {
+		el.focus();	
+	});*/
+}]]></link>
+        <name>Get your Instance</name>
+        <option_schema/>
+        <public>true</public>
+        <roles/>
+        <script><![CDATA[(function () {	
+	var clientIP = gs.getSession().getClientIP();
+	var logMessageSource = 'InstanceReservation-' + clientIP;
+	
+	data.labTitle = gs.getProperty('x_snc_lab_man.lab_name');
+	var debug = gs.getProperty('x_snc_lab_man.debug_enabled', false);
+	var debugCode = "9R4FG";
+
+	var sponsorGR = new GlideRecord('x_snc_lab_man_cl_sponsor');
+	sponsorGR.addActiveQuery();
+	sponsorGR.query();
+	
+	if (sponsorGR.next()) {
+		var attachmentGR = new GlideRecord('sys_attachment');
+		attachmentGR.addQuery('table_name', 'x_snc_lab_man_cl_sponsor');
+		attachmentGR.addQuery('table_sys_id', sponsorGR.sys_id);
+		attachmentGR.query();
+		
+		if (attachmentGR.next()) {
+			data.sponsorImg = 'sys_attachment.do?sys_id=' + attachmentGR.sys_id;
+			data.sponsorAlt = sponsorGR.alt_text.toString();
+		}
+	}
+
+	// we have form input (i.e. this is not the initial load)
+	if (input) {
+		//gs.addInfoMessage(checkAlreadyRegistered(input.emailAddress));
+		// does the input contain an email address?
+		if (input.emailAddress != "" && input.emailAddress != null){
+			// process the email address entered
+			var md5address = new GlideDigest();
+			var md5EmailAddress = md5address.getMD5Hex(input.emailAddress.toLowerCase());
+			
+			// is registration code required? 
+			var requireCode = (gs.getProperty('x_snc_lab_man.reservation_code_required', false) === "true");
+			
+			// get the expected registration code, or boolean false if no code is set
+			var validCode = gs.getProperty(
+				'x_snc_lab_man.reservation_code',
+				(debug == true ? debugCode : false)
+			);
+			validCode = ((validCode !== 'false' && validCode.length > 0 ) ? validCode : false);
+
+			// is this user already registered?
+			var regRateLimitTarget = 'Register email';
+			var regRateLimit = new x_snc_lab_man.rateLimit( clientIP , regRateLimitTarget);
+			var regBlockInfo = regRateLimit.getBlockInfo();
+			// if( regBlockInfo.blocked == false && ( ! checkAlreadyRegistered(md5EmailAddress) )){ - BN Removed for AppGateways/K24
+			if (! checkAlreadyRegistered(md5EmailAddress)) {
+				// not blocked
+				// not already registered, get the code they entered
+				var codeEntered = ( input.registration_code ? input.registration_code.trim() : "" );
+				// did the user enter a code?
+				// if there is no valid code (validCode === false), we should default to registering the user
+				if( requireCode === false || validCode === false || codeEntered.length > 0 ){
+					// validate the email address provided against regex patterns, to trace anomalous entries
+					validateEmailAddress( input.emailAddress );
+					// Rate limiting setup
+					var rateLimitTarget = 'Reservation code';
+					var rateLimit = new x_snc_lab_man.rateLimit( clientIP , rateLimitTarget );
+					var blockInfo = rateLimit.getBlockInfo();
+					// register the user and deliver instances IF: 
+					//    no code is required OR 
+					//    no "valid" code is available OR 
+					//    the user is NOT blocked AND the registration code is valid 
+					if( requireCode === false || validCode === false || 
+						 ( 
+						// blockInfo.blocked == false &&  checkRegistrationCode( codeEntered , validCode )	- BN Removed for AppGateways/K24
+						checkRegistrationCode( codeEntered , validCode )										
+					 ) 
+						){
+						// code not required, no code configured, or valid registration code entered
+						registerUser(md5EmailAddress);
+						getUsersInstances(md5EmailAddress);
+						// log the successful registration w/ the rate limiter
+						regRateLimit.successAttempt()
+					} else {
+						// invalid registration code
+						var message = "Invalid reservation code entered. Please enter a valid reservation code.";
+						// is the client rate-limited?
+						if( blockInfo.blocked == true ){
+							// set a rate-limit message and pad it so the output length 
+							//  is the same as if you entered an invalid reservation code
+							message = "Too many failures. Try again in " + 
+								( blockInfo.hasOwnProperty('blockDuration') ? blockInfo.blockDuration : " a little while" ) + ".";
+						}
+						data.errorMessage = message;
+						gs.addErrorMessage( data.errorMessage );
+						data.registration_code = "";
+						data.code_required = false;	
+						data.invalid_code = true;
+					}
+				} else {
+					// no code entered, prompt user for the reservation code
+					data.emailAddress = input.emailAddress;
+					data.firstName = input.firstName;
+					data.lastName = input.lastName;
+					data.code_required = true;
+					// log the attempt with the rate limiter
+					regRateLimit.failedAttempt();
+				}
+			} else if (regBlockInfo.blocked == true ){
+				var message = "Too many failures. Try again in " + 
+								( regBlockInfo.hasOwnProperty('blockDuration') ? regBlockInfo.blockDuration : " a little while" ) + "";
+				data.errorMessage = message;
+				gs.addErrorMessage(data.errorMessage);
+			}else {
+				// user already registered, get their instance and return the data
+				var lm = new x_snc_lab_man.labManagement();
+				lm.logMessage("User already registered with " + md5EmailAddress, logMessageSource, 0 );
+				getUsersInstances(md5EmailAddress);
+			}
+		} // no email address entered, no further processing
+	} // no input is provided 
+	
+	// clear input fields if there's no code required and this wasn't an invalid code
+/*	if( !data.code_required && !data.invalid_code ){
+		data.emailAddress = "";
+		data.firstName = "";
+		data.lastName = "";
+	}*/
+
+	function checkAlreadyRegistered(emailAddress){
+		var labRecord = new GlideRecord('x_snc_lab_man_student_instances');
+		labRecord.addQuery('reserved', true);
+		labRecord.addQuery('email_address', emailAddress);
+		labRecord.setLimit(1);
+		labRecord.query();
+		if (labRecord.getRowCount() >= 1) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
+	function checkRegistrationCode(codeEntered, validCode){
+		codeEntered = codeEntered || "";
+		// check the code
+		var result = ( 
+			validCode !== false && 
+			codeEntered.length > 0 && 
+			validCode.toUpperCase() == codeEntered.toUpperCase()
+		);
+		// log the attempt
+		rateLimit.logAttempt( result );
+		return result;
+	}
+	
+	// validates the email address provided against regex patterns, 
+	// to trace anomalous entries
+	function validateEmailAddress( emailAddress ){
+		var lm = new x_snc_lab_man.labManagement();
+		// define regex patterns and what to do with them
+		var patterns = [
+			{ 
+				"pattern": "^.*?@.*?(?:\..*?)+$", 
+				"flags": "g" , 
+				"expected_test": true, // what does a successful Regexp.test() return? 
+				"alert_message": "User email address is a non-standard format" 
+			},
+			{ 
+				"pattern": "^.*?@.*?example.*?$", 
+				"flags": "g" , 
+				"expected_test": false, // what does a successful Regexp.test() return?
+				"alert_message": "User email address contains 'example'"
+			},
+		];
+		for( var i = 0 ; i < patterns.length ; i++ ){
+			var re = new RegExp( patterns[i].pattern , patterns[i].flags );
+			if ( re.test( emailAddress ) !== patterns[i].expected_test ){
+				lm.logMessage( patterns[i].alert_message , logMessageSource, 4);
+			}
+		}
+	}
+
+	function getRateLimitDelay(){
+		// is the user blocked into the future? 
+		var rl = new x_snc_lab_man.rateLimit();
+		return rl.blockedSeconds( clientIP, rateLimitTarget );
+	}
+	 
+	function registerUser(emailAddress){
+		var labRecord = new GlideRecord('x_snc_lab_man_student_instances');
+		labRecord.addQuery('reserved', false);
+		labRecord.addQuery('state', 'IN', 'Configured,Stopped,Rebooting,DNS - Incomplete,Hold,Running,Hibernating'); // BN 03/29/24 - Added Running + Hibernating field
+		labRecord.orderBy('instance_name');
+		labRecord.setLimit(1);
+		labRecord.query();
+		if (labRecord.next()) {
+			labRecord.first_name = input.firstName;
+			labRecord.last_name = input.lastName;
+			labRecord.email_address = emailAddress;
+			labRecord.reserved = true;
+			labRecord.update();
+			// log the instance reservation
+			var o = {'instance': labRecord.instance_name , 'email': emailAddress};
+			var lm = new x_snc_lab_man.labManagement();
+			lm.logMessage("Reserved " + o.instance + " to " + o.email, logMessageSource, 0 );
+		}else{
+			data.errorMessage = "There are no more instances available";
+			gs.addErrorMessage("There are no more instances available");
+		}
+	}
+
+	function makeMagicLink( record ){
+		try {
+			// generate the link here
+			var jwt = new x_snc_jwt_lib.clabs();
+			// get the secret key 
+			var secret_key = record.secret_key.getDecryptedValue();
+			// make the token
+			var token = jwt.makeLoginToken( 
+				record.getValue('instance_name') , 
+				record.getValue('user_name') ,
+				secret_key,
+				gs.getProperty('x_snc_lab_man.magic_link_lifespan' , 259000)
+			);
+			// use the token to generate the link
+			var magic_link = jwt.makeLoginLink( 
+				record.getValue('url') ,
+				gs.getProperty('x_snc_lab_man.magic_link_token_param' , 'JKY'),
+				token
+			);
+			// set the data object
+			return magic_link;
+		} catch(e){
+			gs.info('Unable to generate magic link: ', e);
+		}
+	}
+	
+	function getUsersInstances(emailAddress){
+		data.parentInstance = {};
+		data.childInstances = [];
+		var primaryInstance = '';
+
+		// Get Primary Instance
+		var parentRecord = new GlideRecord('x_snc_lab_man_student_instances');
+		parentRecord.addQuery('reserved', true);
+		parentRecord.addQuery('email_address', emailAddress);
+		parentRecord.query();
+		if (parentRecord.next()){
+			// should we generate a magic link? 
+			if(! gs.nil(parentRecord.user_name) && 
+				 ! gs.nil(parentRecord.instance_name) &&
+				 ! gs.nil(parentRecord.secret_key) && 
+				 gs.getProperty('x_snc_lab_man.magic_link_enabled', 'false') == "true"
+				){
+				// get the magic link and 
+				// set the data object
+				data.parentInstance.magic_link = makeMagicLink( parentRecord );
+			}
+			data.parentInstance.instanceName = "Primary ServiceNow Instance";
+			//data.parentInstance.instanceName = parentRecord.instance_name.toString();
+			data.parentInstance.user_name = parentRecord.user_name.toString();
+			data.parentInstance.password = parentRecord.password.toString();
+			data.parentInstance.url = parentRecord.url.toString();
+			primaryInstance = parentRecord.sys_id.toString();
+		}
+
+		var childRecord = new GlideRecord('x_snc_lab_man_paired_instances');
+		childRecord.addEncodedQuery('active=true^paired_instance=' + primaryInstance + '^ORpaired_instanceISEMPTY');
+		childRecord.query();
+		while(childRecord.next()){
+			var nourl = 'true';
+			var childInstance = {};
+			childInstance.instanceName = childRecord.instance_name.toString();
+			childInstance.user_name = childRecord.user_name.toString();
+			childInstance.password = childRecord.password.toString();
+			childInstance.url = childRecord.url.toString();
+			childInstance.instance_type = childRecord.instance_type.toString();
+			if (childRecord.instance_type == "windows_instance" || childRecord.instance_type == "linux_instance"){
+				childRecord.url = childRecord.url.replace("https://", "");
+				var addr = childRecord.url.split(" | ");
+				childInstance.url = addr[1] + " [" + addr[0] + "]";
+				childInstance.instanceName = childRecord.instance_type.getDisplayValue();
+				nourl = 'false';
+			} else if(childRecord.instance_type == "servicenow_instance" ){
+				// should we generate a magic link? 
+				if(! gs.nil(childRecord.user_name) && 
+					 ! gs.nil(childRecord.instance_name) &&
+					 ! gs.nil(childRecord.secret_key) && 
+					 gs.getProperty('x_snc_lab_man.magic_link_enabled', 'false') == "true"
+					){
+					// get the magic link and 
+					// set the data object
+					childInstance.magic_link = makeMagicLink( childRecord );
+				}
+			}
+			childInstance.nourl = nourl;
+
+			data.childInstances.push(childInstance);
+		}
+		
+		// log trace
+		var lm = new x_snc_lab_man.labManagement();
+		lm.logMessage("Retrieved instances for " + emailAddress + "\nParent:" + data.parentInstance.instanceName, logMessageSource, 0 );
+	}
+
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-03-16 18:18:37</sys_created_on>
+        <sys_id>208ced9a5c6f88147f442a8e9a094b20</sys_id>
+        <sys_mod_count>107</sys_mod_count>
+        <sys_name>Get your Instance</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sp_widget_208ced9a5c6f88147f442a8e9a094b20</sys_update_name>
+        <sys_updated_by>brian.nhieu@snc</sys_updated_by>
+        <sys_updated_on>2024-05-01 20:39:30</sys_updated_on>
+        <template><![CDATA[<div class="center">
+  <div style="display:inline-block">
+		<img src="servicenow_transparent_logo.png" width="424px">
+    <h2>
+    	Welcome to<br>
+    	{{data.labTitle}}
+  	</h2>
+  </div>
+  <div style="position: absolute; right: 0; top: 5%">
+  	<img ng-src="{{data.sponsorImg}}" ng-if="data.sponsorImg != ''" alt="{{data.sponsorAlt}}" style="max-width:200px">
+  </div>
+  <!-- your widget template -->
+  <form ng-if="!data.parentInstance">
+    <div class="form-group container">
+      <div class="row">
+        <div class="col-sm">
+          <label class="sr-only" for="firstName">First Name</label>
+          <input name="firstName" class="form-control" id="firstName" ng-model="c.data.firstName"
+                 ng-disabled="c.data.code_required" type="text" placeholder="First Name"> &nbsp;
+          <label class="sr-only" for="lastName">Last Name</label>
+          <input name="lastName" class="form-control" id="lastName" ng-model="c.data.lastName"
+                 ng-disabled="c.data.code_required" type="text" placeholder="Last Name">
+          <br><br>
+          <label class="sr-only" for="emailAddress">Email Address</label>
+          <input name="emailAddress" class="form-control" id="emailAddress"
+                 ng-model="c.data.emailAddress" type="text" size="60"
+                 ng-disabled="c.data.code_required" placeholder="Enter your email address to reserve your instances"><br>
+          <br>
+          <div>
+            <p><svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-info-circle-fill text-danger" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+              </svg>&nbsp;&nbsp;
+              Email address is used for instance reservation purposes <strong>only</strong> and are not stored in plaintext or transmitted.
+            </p>
+            <p>
+              If you need your credentials again, return to this page and enter the same email address.
+            </p>
+            <div>
+              <button ng-click="reserveInstance();" class="btn btn-primary"
+                      ng-disabled="c.data.code_required">
+                Register for Lab
+              </button>
+            </div>
+          </div>
+          <br>
+          <div class="codeEntry" id="codeEntry" ng-show="c.data.code_required">
+            <div class="alert alert-info">
+              <i class="fa fa-key"></i>&nbsp;Please enter the reservation code provided to you by the instructor or class representative.
+            </div>
+            <div>
+              <label class="sr-only" for="regCode">Reservation code</label>
+              <input name="regCode" class="form-control" id="regCode" ng-model="c.data.registration_code"
+                     type="text" placeholder="xxxxx" maxlength="5">
+            </div>
+            <div>
+              <button ng-click="submitCode();" class="btn"
+                      ng-class="{'btn-danger': c.data.code_required , 'btn-primary': !c.data.code_required}">
+                Complete Registration
+              </button>              
+            </div>
+          </div>
+          <br/>
+        </div>
+      </div>
+    </div>
+  </form>
+  <div ng-if="data.parentInstance">
+    <table class='table table-hover'>
+      <thead><tr>
+        <th>Resource</th>
+        <th>Address</th>
+        <th>Username</th>
+        <th>Password</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{::data.parentInstance.instanceName}}</td>
+          <td><a href="{{::data.parentInstance.url}}" target="_blank">{{::data.parentInstance.url}}</a></td>
+          <td>{{::data.parentInstance.user_name}}</td>
+          <td>{{::data.parentInstance.password}}&nbsp;&nbsp;
+            <a ng-if="data.parentInstance.magic_link" 
+               href="{{::data.parentInstance.magic_link}}" 
+               target="_blank"
+               ng-title="Use Magic Link to log in as {{::data.parentInstance.user_name}} without a password"><i class="fa fa-key" aria-hidden="true"></i>
+              Magic Link</a>
+          </td>
+        </tr>
+        <tr ng-repeat="child in data.childInstances">
+          <td>{{::child.instanceName}} <a ng-if="child.instance_type == 'windows_instance' || child.instance_type == 'linux_instance'" ng-click="c.openModal()"><svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-question-circle-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.57 6.033H5.25C5.22 4.147 6.68 3.5 8.006 3.5c1.397 0 2.673.73 2.673 2.24 0 1.08-.635 1.594-1.244 2.057-.737.559-1.01.768-1.01 1.486v.355H7.117l-.007-.463c-.038-.927.495-1.498 1.168-1.987.59-.444.965-.736.965-1.371 0-.825-.628-1.168-1.314-1.168-.901 0-1.358.603-1.358 1.384zm1.251 6.443c-.584 0-1.009-.394-1.009-.927 0-.552.425-.94 1.01-.94.609 0 1.028.388 1.028.94 0 .533-.42.927-1.029.927z"/>
+            </svg></a></td>
+          <td ng-if="child.nourl == 'true'"> <a href="{{::child.url}}" target="_blank">{{::child.url}}</a></td>
+          <td ng-if="child.nourl == 'false'">{{::child.url}}</td>
+          <td>{{::child.user_name}}</td>
+          <td>{{::child.password}}&nbsp;&nbsp;
+            <a ng-if="child.magic_link" 
+               href="{{::child.magic_link}}" 
+               target="_blank"
+               ng-title="Use Magic Link to log in as {{::child.user_name}} without a password"><i class="fa fa-key" aria-hidden="true"></i>
+              Magic Link</a></td>
+        </tr>
+      </tbody>
+    </table><br><br>
+    <button onClick="window.location.reload();" class="btn btn-primary">Back</button>
+  </div>
+  <!--<div>
+<button class="btn btn-primary" ng-click="c.openModal()">${Open Modal}</button>
+</div> -->
+
+  <script type="text/ng-template" id="modalTemplate">
+    <div class="panel panel-default">
+ <div class="panel-heading">
+ <h4 class="panel-title">Remote Connection</h4>
+    </div>
+ <div class="panel-body wrapper-xl">
+ <b>Windows Server:</b> This server will require you to use a <b>Remote Desktop Client</b> to connect and access the desktop. On a Mac you can install Microsoft's RDP client. Windows has the RDP client preinstalled.<br><br>
+ <b>Linux Server:</b> To access this machine you will need to connect via SSH. You will need to use a terminal on Mac with access to ssh or if you are on a Windows computer you can use the <b>Windows Terminal</b> or <b>Putty</b> to connect
+    </div>
+ <div class="panel-footer text-right">
+ <button class="btn btn-primary" ng-click="c.closeModal()">${Close}</button>
+    </div>
+    </div>
+  </script>
+]]></template>
+    </sp_widget>
+</record_update>

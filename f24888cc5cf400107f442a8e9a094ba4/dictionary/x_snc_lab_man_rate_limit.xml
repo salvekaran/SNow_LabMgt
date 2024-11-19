@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="801dfe2d55d121107f445ddc8305732c" label="Rate limit" max_length="40" name="x_snc_lab_man_rate_limit" type="collection">
+        <element hint="IP is blocked from the target until after this time" label="Blocked until" max_length="40" name="blocked_until" type="glide_date_time"/>
+        <element hint="Rate limit record will be expunged after this time" label="Expires" max_length="40" name="expires" type="glide_date_time"/>
+        <element attributes="edge_encryption_enabled=true" hint="Number of failed attempts by this IP to the target" label="Fail count" max_length="40" name="fail_count" type="integer"/>
+        <element attributes="edge_encryption_enabled=true" hint="IP address attempting to access the target" label="IP address" max_length="40" name="ip_address" type="ip_addr"/>
+        <element hint="Time of most recent failed attempt" label="Latest fail" max_length="40" name="latest_fail" type="glide_date_time"/>
+        <element hint="Time of successful attempt" label="Success on" max_length="40" name="success_on" type="glide_date_time"/>
+        <element attributes="edge_encryption_enabled=true" choice="1" hint="Target of the attempt" label="Target" max_length="40" name="target" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="Register email" sequence="1" value="Register email"/>
+                <element inactive_on_update="false" label="Reservation code" sequence="2" value="Reservation code"/>
+            </choice>
+        </element>
+    </element>
+</database>

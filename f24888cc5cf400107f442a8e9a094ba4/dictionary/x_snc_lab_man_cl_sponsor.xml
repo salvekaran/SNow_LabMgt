@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="c7d9af0f9fa542107f44a3945224ab5a" label="CL Sponsor" max_length="40" name="x_snc_lab_man_cl_sponsor" type="collection">
+        <element attributes="edge_encryption_enabled=true" label="Active" max_length="40" name="active" type="boolean"/>
+        <element label="Alt Text" max_length="120" name="alt_text" type="string"/>
+        <element display="true" label="Name" max_length="40" name="name" type="string"/>
+    </element>
+</database>

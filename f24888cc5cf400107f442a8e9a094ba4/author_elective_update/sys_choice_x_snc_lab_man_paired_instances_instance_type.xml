@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_choice action="INSERT_OR_UPDATE" field="instance_type" table="x_snc_lab_man_paired_instances" version="3">
+        <sys_choice_set action="INSERT_OR_UPDATE">
+            <element>instance_type</element>
+            <name>x_snc_lab_man_paired_instances</name>
+            <sys_class_name>sys_choice_set</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-03-16 17:35:02</sys_created_on>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>instance_type</sys_name>
+            <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+            <sys_update_name>sys_choice_x_snc_lab_man_paired_instances_instance_type</sys_update_name>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-04-12 22:41:48</sys_updated_on>
+        </sys_choice_set>
+        <sys_choice action="INSERT_OR_UPDATE">
+            <dependent_value/>
+            <element>instance_type</element>
+            <hint/>
+            <inactive>false</inactive>
+            <label>ServiceNow</label>
+            <language>en</language>
+            <name>x_snc_lab_man_paired_instances</name>
+            <sequence>100</sequence>
+            <synonyms/>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-03-16 17:35:29</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-12-01 14:07:33</sys_updated_on>
+            <value>servicenow_instance</value>
+        </sys_choice>
+        <sys_choice action="INSERT_OR_UPDATE">
+            <dependent_value/>
+            <element>instance_type</element>
+            <hint/>
+            <inactive>false</inactive>
+            <label>Windows Server</label>
+            <language>en</language>
+            <name>x_snc_lab_man_paired_instances</name>
+            <sequence>200</sequence>
+            <synonyms/>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-03-16 17:35:44</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-12-01 14:07:33</sys_updated_on>
+            <value>windows_instance</value>
+        </sys_choice>
+        <sys_choice action="INSERT_OR_UPDATE">
+            <dependent_value/>
+            <element>instance_type</element>
+            <hint/>
+            <inactive>false</inactive>
+            <label>Linux Server</label>
+            <language>en</language>
+            <name>x_snc_lab_man_paired_instances</name>
+            <sequence>300</sequence>
+            <synonyms/>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-03-16 17:35:02</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-12-01 14:07:33</sys_updated_on>
+            <value>linux_instance</value>
+        </sys_choice>
+        <sys_choice action="INSERT_OR_UPDATE">
+            <dependent_value/>
+            <element>instance_type</element>
+            <hint/>
+            <inactive>false</inactive>
+            <label>Documentation</label>
+            <language>en</language>
+            <name>x_snc_lab_man_paired_instances</name>
+            <sequence>400</sequence>
+            <synonyms/>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-03-16 17:36:04</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-12-01 14:07:33</sys_updated_on>
+            <value>documentation</value>
+        </sys_choice>
+        <sys_choice action="INSERT_OR_UPDATE">
+            <dependent_value/>
+            <element>instance_type</element>
+            <hint/>
+            <inactive>false</inactive>
+            <label>Other</label>
+            <language>en</language>
+            <name>x_snc_lab_man_paired_instances</name>
+            <sequence>500</sequence>
+            <synonyms/>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2020-03-16 17:36:23</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>chris.webster</sys_updated_by>
+            <sys_updated_on>2023-12-01 14:07:33</sys_updated_on>
+            <value>other</value>
+        </sys_choice>
+    </sys_choice>
+</record_update>

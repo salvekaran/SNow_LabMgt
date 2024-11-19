@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="0628f0d38d9211107f44ca1ca671e9cb" label="Student Instances" max_length="40" name="x_snc_lab_man_student_instances" type="collection">
+        <element attributes="edge_encryption_enabled=true" label="Email Hash" max_length="100" name="email_address" read_only="true" type="string"/>
+        <element attributes="edge_encryption_enabled=true" label="First Name" max_length="50" name="first_name" read_only="true" type="string"/>
+        <element attributes="edge_encryption_enabled=true" display="true" label="Instance Name" max_length="100" name="instance_name" read_only="true" type="string"/>
+        <element attributes="edge_encryption_enabled=true" label="Last Name" max_length="50" name="last_name" read_only="true" type="string"/>
+        <element label="Password" max_length="200" name="password" read_only="true" type="string"/>
+        <element attributes="edge_encryption_enabled=true" label="Reserved" max_length="40" name="reserved" read_only="true" type="boolean"/>
+        <element label="Secret key" max_length="255" name="secret_key" type="password2"/>
+        <element label="State" max_length="40" name="state" read_only="true" type="string"/>
+        <element label="URL" max_length="1024" name="url" read_only="true" type="url"/>
+        <element label="User Name" max_length="200" name="user_name" read_only="true" type="string"/>
+    </element>
+</database>

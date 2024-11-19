@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_snc_lab_man.rateLimit</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Rate limiting features for user-facing aspects of Lab Management</description>
+        <name>rateLimit</name>
+        <script><![CDATA[/**
+  *   Rate limiter for Lab Management
+  *
+  *   This is used to rate limit any kind of client-facing interaction 
+  *    where server code is also executed. 
+  *
+  *   initializing this object requires two pieces of information:
+  *     - the client's IP address 
+  *     - the target resource for the rate limit
+  *
+  *     initialize( client_ip , target ): 
+  *
+  *    the client's IP address is obtainable via gs.getSession().getClientIP();
+  * 
+  *    the rate limit target can be any string no longer than 40 characters
+  */
+var rateLimit = Class.create();
+rateLimit.prototype = {
+	TBL_LIMIT: 'x_snc_lab_man_rate_limit',
+	F_BLOCKED_UNTIL: 'blocked_until',
+	F_EXPIRES: 'expires',
+	F_COUNTER: 'fail_count',
+	F_IP_ADDRESS: 'ip_address',
+	F_TARGET: 'target',
+	F_SUCCESS_ON: 'success_on',
+
+// 	PROP_MINIMUM: 'x_snc_lab_man.rate_limit_minimum_failcount',
+// 	MINIMUM: 0, // minimum number of failures before rate limiting is engaged
+// 	PROP_RETENTION_SECONDS: 'x_snc_lab_man.rate_limit_retention',
+// 	RETENTION_SECONDS: 3600, // number of seconds rate limit records should be retained
+// 	BACKOFF_BUFFER: 7, // magic number to help temper the 2^x exponential growth of the backoff counter
+	
+	CLIENT_IP: '',
+	TARGET: '',
+	RL_RECORD: null,
+	RL_SYSID: null,
+    initialize: function( client_ip , target ) {
+		// gather property values or use defaults
+// 		this.MINIMUM = gs.getProperty( this.PROP_MINIMUM , this.MINIMUM );
+// 		this.RETENTION_SECONDS = gs.getProperty( this.PROP_RETENTION_SECONDS , this.RETENTION_SECONDS );
+		
+		// set object variables
+		if( client_ip && target ){
+			this.CLIENT_IP = client_ip;
+			this.TARGET = target;
+
+			// get/create rate limit record
+
+			// Get the rate limit record for this client and target
+			// * EXCLUDE rate limits which have been terminated with
+			// *  a successful attempt
+			var gr = new GlideRecord( this.TBL_LIMIT );
+			gr.addQuery( this.F_IP_ADDRESS , this.CLIENT_IP );
+			gr.addQuery( this.F_TARGET , this.TARGET );
+			gr.addNullQuery( this.F_SUCCESS_ON );
+			gr.query();
+
+			if( gr.hasNext() ){
+				gr.next();
+				// set object values for this rate limit record
+				this.RL_SYSID = gr.getUniqueValue();
+// 				this.RL_RECORD = gr;
+			} else {
+				// create rate limit record and set object values
+// 				gr.initialize();
+// 				gr.setValue( this.F_IP_ADDRESS , this.CLIENT_IP );
+// 				gr.setValue( this.F_TARGET , this.TARGET );
+// 				this.RL_SYSID = gr.insert();
+// 				this.RL_RECORD = gr.get( this.RL_SYSID );
+			}
+		}
+    },
+// 	// calculates the rate limit delay, in seconds
+// 	getBackoffSeconds: function( fail_count ){
+// 		fail_count = parseInt(fail_count) || 1;
+// 		var backoffInt = fail_count - this.getMinimum();
+		
+// 		// calculate & return the backoff interval IFF backoffInt > 0 ; 
+// 		// if backoffInt < 0 the resulting interval will ALWAYS == 0
+// 		// so there's no reason to waste cycles calculating it
+// 		return backoffInt <= 0 ? 0 : (
+// 			Math.max( 0 , backoffInt ) * Math.pow( 2 , backoffInt / this.getBackoffBuffer() )
+// 		);
+// 	},
+// 	// returns the minimum # of failures before rate limiting is engaged
+// 	getMinimum: function(){
+// 		return parseInt( this.MINIMUM );
+// 	},
+// 	// returns the "magic number" used to temper the exponential growth curve
+// 	getBackoffBuffer: function(){
+// 		return parseInt(this.BACKOFF_BUFFER);
+// 	},
+// 	// returns the interval of time (in seconds) rate limit records should be retained
+// 	getRetentionSeconds: function(){
+// 		return parseInt(this.RETENTION_SECONDS);
+// 	},
+	// Log a successful attempt 
+	successAttempt: function( client_ip , target ){
+		client_ip = client_ip || this.CLIENT_IP;
+		target = target || this.TARGET;
+		return this.logAttempt( true, client_ip , target );
+	},
+	// Log a failed attempt
+	failedAttempt: function( client_ip , target ){
+		client_ip = client_ip || this.CLIENT_IP;
+		target = target || this.TARGET;
+		return this.logAttempt( false , client_ip , target );
+	},
+	// Log an attempt
+	logAttempt: function( success, client_ip , target ){
+		success = ( success === true ? success: false );
+		client_ip = client_ip || this.CLIENT_IP;
+		target = target || this.TARGET;
+		if( client_ip && target ){
+			// Get the rate limit record for this client and target
+			// * EXCLUDE rate limits which have been terminated with
+			// *  a successful attempt
+			var gr = new GlideRecord( this.TBL_LIMIT );
+
+			gr.addQuery( this.F_IP_ADDRESS , client_ip );
+			gr.addQuery( this.F_TARGET , target );
+			gr.addNullQuery( this.F_SUCCESS_ON );
+			gr.query();
+
+			// if a record is found, we need to update the record accordingly
+			// if no record is found and this is a failure, we need to insert a new record
+			if( gr.hasNext()){
+				gr.next();
+				// we found a rate limit record, we must update it with success/failure detail
+				if( success ){
+					var gdt = new GlideDateTime();
+					gr.setValue( this.F_SUCCESS_ON ,  gdt );
+				} else {
+					gr.setValue( this.F_COUNTER , parseInt(gr.getValue( this.F_COUNTER )) + 1  );
+				}
+				var sysid = gr.getUniqueValue();
+				gr.update();
+				return sysid;
+			} else if( ! success ) {
+				// create a new rate limit record
+				gr.initialize();
+				gr.setValue( this.F_IP_ADDRESS , client_ip );
+				gr.setValue( this.F_TARGET , target );
+				gr.setValue( this.F_COUNTER , 1 );
+				return gr.insert();
+			}
+		}
+		return null;
+	},
+	getBlockInfo: function( client_ip , target ){
+		client_ip = client_ip || this.CLIENT_IP;
+		target = target || this.TARGET;
+		var o = {
+			blocked: null,
+			blockedUntil: null,
+			blockDuration: null,
+		};
+		if( client_ip && target ){
+			var gr = new GlideRecord( this.TBL_LIMIT );
+			gr.addQuery( this.F_IP_ADDRESS , client_ip );
+			gr.addQuery( this.F_TARGET , target );
+			gr.addNullQuery( this.F_SUCCESS_ON );
+			gr.query();
+
+			if( gr.hasNext() ){
+				gr.next();
+				var blockedUntil = new GlideDateTime( gr.getValue( this.F_BLOCKED_UNTIL ) );
+				var isBlocked = blockedUntil.compareTo( new GlideDateTime() ) > 0 ;
+				if( isBlocked ){
+					var blockDuration = GlideDateTime.subtract(new GlideDateTime(), blockedUntil);
+					o.blockDuration = blockDuration.getDisplayValue();
+					o.blockedUntil = blockedUntil.getDisplayValue();
+					var lm = new x_snc_lab_man.labManagement();
+					var messageText = "IP address: " + client_ip + "\nTarget: " + target + "\nBlock duration: " + o.blockDuration;
+					var messageKey = "Rate limit";
+					var severity = 0;
+					var info = {
+						block: o,
+						client_ip: client_ip,
+						target: target
+					};
+					lm.logMessage(messageText, messageKey, severity, JSON.stringify(info));
+				}
+				o.blocked = isBlocked;
+			} else {
+				o.blocked = false;
+			}
+		}
+		return o;
+	},
+	// Is the client blocked? 
+// 	isBlocked: function( ip_address , target ){
+// 		var gdt = this.blockedUntil( ip_address , target );
+// 		var nowTime = new GlideDateTime();
+// 		var compare = gdt.compareTo( nowTime ); // compare > 0 if gdt > nowTime
+// 		return ( compare > 0 );
+// 	},
+// 	// How long until the client make the next attempt to the target?
+// 	// @return GlideDuration Duration until next attempt is allowed
+// 	blockedDuration: function( ip_address ,  target ){
+// 		if( this.isBlocked(ip_address , target) ){ 
+// 			return new GlideDuration(0);
+// 		} else {
+// 			return this.blockedUntil().subtract( new GlideDateTime() );
+// 		}
+// 	},
+// 	// When can the client make the next attempt to the target?
+// 	// @return GlideDateTime Date/time the next attempt is allowed
+// 	blockedUntil: function( ip_address , target ){
+// 		var gr = new GlideRecord( this.TBL_LIMIT );
+// 		gr.addQuery( this.F_IP_ADDRESS , ip_address );
+// 		gr.addQuery( this.F_TARGET , target );
+// 		gr.addNullQuery( this.F_SUCCESS_ON );
+// 		gr.query();
+// 		if( gr.next() ){
+// 			// there is a rate limit, next attempt can be performed after the time specified
+// 			var o = new GlideDateTime( gr.getValue( this.F_BLOCKED_UNTIL ) ) ;
+// 			return o;
+// 		} else {
+// 			// no rate limit, next attempt can be performed now
+// 			return new GlideDateTime();
+// 		}
+// 	},
+    type: 'rateLimit'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-02-28 22:00:14</sys_created_on>
+        <sys_id>f17747e1551521107f445ddc8305735f</sys_id>
+        <sys_mod_count>38</sys_mod_count>
+        <sys_name>rateLimit</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_script_include_f17747e1551521107f445ddc8305735f</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-05-12 15:34:32</sys_updated_on>
+    </sys_script_include>
+</record_update>

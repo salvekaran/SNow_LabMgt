@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description/>
+        <direct>false</direct>
+        <endpoint>x_snc_lab_man_magic_link_popup.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="jelly:core" xmlns:g2="glide">
+	
+	<g:evaluate var="jvar_instance_sysid" jelly="true" expression="RP.getParameterValue('sysparm_instance_sysid')"/>
+	<g:evaluate var="jvar_user" jelly="true" expression="RP.getParameterValue('sysparm_user')"/>
+	<g:evaluate var="jvar_obj" jelly="true" object="true">
+	var gr = new GlideRecordSecure('x_snc_lab_man_student_instances');
+	var instance = RP.getParameterValue('sysparm_instance_sysid');
+	var user = RP.getParameterValue('sysparm_user');
+	var userArr = user.split(',');
+	var magiclink_parameter = gs.getProperty('x_snc_lab_man.magic_link_token_param', 'JKY');
+	var magiclink_exp = gs.getProperty('x_snc_lab_man.magic_link_lifespan', 259000);
+	var obj = {'links':[],'message':'Default message', 'instance':''};
+	if( instance ) {
+		if( gr.get( instance ) ){
+			//if(debugLog) gs.info('Found instance RECORD');
+			// found instance record
+			var user_name = gr.user_name+"";
+			if( !gs.nil(user_name) &amp;&amp; userArr.indexOf(user_name) === -1 ){
+				userArr.push(user_name);
+			}
+			if( !gs.nil( gr.secret_key ) ){
+				//if(debugLog) gs.info('Instance has shared secret!');
+				obj.instance = gr.instance_name+"";
+				obj.url = gr.url+"";
+				var secret = gr.secret_key.getDecryptedValue();
+				// found shared secret
+				for( var k in userArr ){
+					var theUser = userArr[k];
+					var jwt = new x_snc_jwt_lib.clabs();
+					var token = jwt.makeLoginToken( obj.instance , theUser , secret , magiclink_exp );
+					//if(debugLog) gs.info('Made token! ' + token);
+					var link = obj.url + "/?" + magiclink_parameter + "=" + token;
+					//if(debugLog) gs.info('Made link! ' + link);
+					obj.links.push({'user': theUser , 'url': link, 'instance': obj.instance });
+				}
+				obj.message = obj.links.length + ' links created.';
+			} else {
+				obj.message = 'No shared secret found for this instance.';
+			}
+		} else {
+			obj.message = 'No instance found with this sys_id: ' + instance;
+		}
+	} else {
+		obj.message = 'No instance sys_id provided!';
+	}
+	obj;
+	</g:evaluate>
+
+	<g:evaluate var="jvar_links" jelly="true" object="true" expression="jelly.jvar_obj.links;"/>
+	<g:evaluate var="jvar_link_count" jelly="true" object="true" expression="jelly.jvar_obj.links.length;"/>
+	<g:evaluate var="jvar_flag" jelly="true" object="true" expression="false;"/>
+	<j:choose>
+		<j:when test="${jvar_link_count &gt; 0}">
+			<!--<h4>Logging into$[SP]<code>${jvar_obj.instance}</code></h4>-->
+			<div class="alert alert-info" id="login-warning"><span class="icon-info">$[SP]</span>$[SP]Click a link below to log in as the selected user.</div>
+			<j:forEach items="${jvar_links}" var="jvar_link">
+				<div class="link">
+					<!--<j:choose>
+						<j:when test="${jvar_link.user == 'admin'}">
+							<div class="alert alert-success">The <code>admin</code> user should always work.</div>
+						</j:when>
+						<j:when test="${jvar_link.user != 'admin' }">
+							<j:if test="${jvar_flag == false}">
+								<g:evaluate var="jvar_flag" jelly="true" object="true" expression="true;"/>
+								<div class="alert alert-info">Other user links will only work if the account:
+									<ul><li>exists on the target instance,</li><li>is enabled, and</li><li>is not locked out.</li></ul></div>
+							</j:if>
+   </j:when>
+  </j:choose>-->
+					<a href="${jvar_link.url}" target="_blank" title="Log in to ${jvar_obj.instance} as ${jvar_link.user}">${jvar_link.user}</a>
+				</div>
+			</j:forEach>
+<!--			<div class="alert alert-warning"><span class="icon-alert">$[SP]</span>$[SP]If you are already logged in to this instance, you must <a href="${jvar_obj.url}/logout.do?" target="_blank">click here</a>$[SP]to log out first.</div>-->
+			<span class="message">${jvar_obj.message}</span>
+		</j:when>
+		<j:otherwise>
+			<h5>${jvar_obj.message}</h5>
+		</j:otherwise>
+	</j:choose>
+	<!--<g:ui_form>
+		<input type="hidden" value="${jvar_instance_sysid}" id="instance"/>
+		<input type="text" value="${jvar_user}" name="user" disabled="disabled"/>
+ </g:ui_form>-->
+	<style>
+		<!-- hide the page timing div -->
+	#page_timing_div{
+		display :none !important;
+	}
+		.no-show {
+		display: none !important;
+		}
+/* GlideModal_standard.scss */
+.modal-body {
+  /* links.scss */
+}
+.modal-body a,
+.modal-body a:active,
+.modal-body a:visited,
+.modal-body a:hover {
+  color: #032d42;
+  text-decoration: underline;
+}
+.modal-body a:active,
+.modal-body a:hover {
+  color: #5274ff;
+}
+.modal-body h2, .modal-body h3, .modal-body h4, .modal-body h5, .modal-body h6 {
+  margin-top: 6px;
+  padding: 6px;
+}
+.modal-body h2 code, .modal-body h3 code, .modal-body h4 code, .modal-body h5 code, .modal-body h6 code {
+  padding: 0px 6px;
+}
+.modal-body form,
+.modal-body span.message,
+.modal-body input {
+  padding: 6px;
+  padding-bottom: 9px;
+  margin: 6px 0;
+}
+.modal-body div:not(.alert) {
+  padding: 6px;
+  padding-bottom: 9px;
+  margin: 6px 0;
+}
+.modal-body div.alert {
+  padding: 6px;
+  min-height: 24px;
+}
+.modal-body code {
+  white-space: nowrap;
+}
+.modal-body div:not(.alert) a {
+  padding-top: 9px;
+  padding-bottom: 6px;
+  margin-left: 6px;
+}
+.modal-body input {
+  width: 100%;
+}
+.modal-body span.message {
+  font-size: 0.95em;
+  margin-right: 6px;
+  float: right;
+}
+
+	</style>
+</j:jelly>]]></html>
+        <name>magic_link_popup</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-06-23 13:19:27</sys_created_on>
+        <sys_id>a655f185b5d419507f44f5daf46ef6db</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>magic_link_popup</sys_name>
+        <sys_package display_value="Lab Management" source="x_snc_lab_man">f24888cc5cf400107f442a8e9a094ba4</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="Lab Management">f24888cc5cf400107f442a8e9a094ba4</sys_scope>
+        <sys_update_name>sys_ui_page_a655f185b5d419507f44f5daf46ef6db</sys_update_name>
+        <sys_updated_by>chris.webster</sys_updated_by>
+        <sys_updated_on>2023-04-12 22:42:12</sys_updated_on>
+    </sys_ui_page>
+</record_update>
